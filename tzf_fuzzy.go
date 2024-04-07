@@ -45,15 +45,17 @@ func (f *FuzzyFinder) GetTimezoneName(lng float64, lat float64) string {
 	if err != nil {
 		return ""
 	}
-	return names[0]
+	if len(names) > 0 {
+		return names[0]
+	}
+	return ""
 }
 
 func (f *FuzzyFinder) GetTimezoneNames(lng float64, lat float64) ([]string, error) {
 	p := orb.Point{lng, lat}
 	for z := f.aggZoom; z <= f.idxZoom; z++ {
 		key := maptile.At(p, maptile.Zoom(z))
-		v, ok := f.m[key]
-		if ok {
+		if v, ok := f.m[key]; ok {
 			return v, nil
 		}
 	}

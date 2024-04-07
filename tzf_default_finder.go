@@ -3,6 +3,7 @@ package tzf
 import (
 	"fmt"
 	"runtime"
+	"sync"
 
 	"github.com/Alfex4936/tzf/pb"
 	tzfrellite "github.com/ringsaturn/tzf-rel-lite"
@@ -67,39 +68,42 @@ func (f *DefaultFinder) GetTimezoneName(lng float64, lat float64) string {
 		return name
 	}
 
-	// Preparing for parallel checks
-	type result struct {
-		name string
-		err  error
-	}
-	results := make(chan result, 9) // Buffer for potential 9 offset checks
+	// Setup for concurrent offset checks
+	var wg sync.WaitGroup
+	results := make(chan string, 1) // Use a buffered channel
 
-	offsets := []float64{-0.02, 0, 0.02}
+	checkAndSend := func(lng, lat float64) {
+		defer wg.Done()
+		if name := f.fuzzyFinder.GetTimezoneName(lng, lat); name != "" {
+			select {
+			case results <- name:
+			default:
+			}
+		} else if name := f.finder.GetTimezoneName(lng, lat); name != "" {
+			select {
+			case results <- name:
+			default:
+			}
+		}
+	}
+
+	// Launch goroutines for offset checks
+	offsets := []float64{-0.02, 0.02} // Only need to check non-zero offsets
 	for _, dx := range offsets {
 		for _, dy := range offsets {
-			// Avoid the central point (0, 0) offset, already checked
-			if dx == 0 && dy == 0 {
-				continue
-			}
-			dlng, dlat := dx+lng, dy+lat
-			go func(lng, lat float64) {
-				var res result
-				if name := f.fuzzyFinder.GetTimezoneName(lng, lat); name != "" {
-					res.name = name
-				} else if name := f.finder.GetTimezoneName(lng, lat); name != "" {
-					res.name = name
-				}
-				results <- res
-			}(dlng, dlat)
+			wg.Add(1)
+			go checkAndSend(lng+dx, lat+dy)
 		}
 	}
 
-	// Collecting results
-	for i := 0; i < cap(results); i++ {
-		res := <-results
-		if res.name != "" {
-			return res.name
-		}
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	// Return the first result received
+	if result, ok := <-results; ok {
+		return result
 	}
 	return ""
 }
