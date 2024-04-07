@@ -5,7 +5,6 @@
 package tzf
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -64,26 +63,26 @@ func (i *tzitem) ContainsPoint(p geometry.Point) bool {
 }
 
 func (i *tzitem) containsPointConcurrent(p geometry.Point) bool {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	var wg sync.WaitGroup
-	resultChan := make(chan bool, 1)
+	found := make(chan bool, 1) // Buffer to prevent blocking
+	done := make(chan struct{}) // Signal to stop other goroutines
 
 	for _, poly := range i.polys {
 		wg.Add(1)
 		go func(poly *geometry.Poly) {
 			defer wg.Done()
 			select {
-			case <-ctx.Done():
-				// Another goroutine found the point, no need to continue
+			case <-done:
+				// Received signal to stop
 				return
 			default:
 				if poly.ContainsPoint(p) {
 					select {
-					case resultChan <- true:
-						cancel() // Signal to other goroutines to stop processing
+					case found <- true:
+						// Found a containing polygon, signal others to stop
+						close(done)
 					default:
+						// Found channel was already signaled, exit
 					}
 				}
 			}
@@ -92,15 +91,12 @@ func (i *tzitem) containsPointConcurrent(p geometry.Point) bool {
 
 	go func() {
 		wg.Wait()
-		close(resultChan) // Close the channel once all checks are done
+		close(found) // Ensure found channel is closed after all goroutines are done
 	}()
 
-	select {
-	case result := <-resultChan:
-		return result
-	default:
-		return false
-	}
+	// Return true if found channel receives data, else false
+	_, ok := <-found
+	return ok
 }
 
 func (i *tzitem) getMinMax() ([2]float64, [2]float64) {
