@@ -42,13 +42,10 @@ func NewFuzzyFinderFromPB(input *pb.PreindexTimezones) (F, error) {
 
 func (f *FuzzyFinder) GetTimezoneName(lng float64, lat float64) string {
 	names, err := f.GetTimezoneNames(lng, lat)
-	if err != nil {
+	if err != nil || len(names) == 0 {
 		return ""
 	}
-	if len(names) > 0 {
-		return names[0]
-	}
-	return ""
+	return names[0]
 }
 
 func (f *FuzzyFinder) GetTimezoneNames(lng float64, lat float64) ([]string, error) {

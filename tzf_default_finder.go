@@ -59,6 +59,7 @@ func NewDefaultFinder() (F, error) {
 	return f, nil
 }
 
+// Optimized GetTimezoneName considers initial direct lookups before falling back to concurrent offset checks
 func (f *DefaultFinder) GetTimezoneName(lng float64, lat float64) string {
 	// Immediate checks without offsets
 	if name := f.fuzzyFinder.GetTimezoneName(lng, lat); name != "" {
@@ -68,44 +69,30 @@ func (f *DefaultFinder) GetTimezoneName(lng float64, lat float64) string {
 		return name
 	}
 
-	// Setup for concurrent offset checks
+	// Use concurrency for offset checks only if immediate lookups fail
+	offsets := []float64{-0.02, 0.02}
+	var result string
+	var once sync.Once
+
 	var wg sync.WaitGroup
-	results := make(chan string, 1) // Use a buffered channel
-
-	checkAndSend := func(lng, lat float64) {
-		defer wg.Done()
-		if name := f.fuzzyFinder.GetTimezoneName(lng, lat); name != "" {
-			select {
-			case results <- name:
-			default:
-			}
-		} else if name := f.finder.GetTimezoneName(lng, lat); name != "" {
-			select {
-			case results <- name:
-			default:
-			}
-		}
-	}
-
-	// Launch goroutines for offset checks
-	offsets := []float64{-0.02, 0.02} // Only need to check non-zero offsets
 	for _, dx := range offsets {
 		for _, dy := range offsets {
 			wg.Add(1)
-			go checkAndSend(lng+dx, lat+dy)
+			go func(dx, dy float64) {
+				defer wg.Done()
+				// Offsets applied
+				offsetLng, offsetLat := lng+dx, lat+dy
+				if name := f.fuzzyFinder.GetTimezoneName(offsetLng, offsetLat); name != "" {
+					once.Do(func() { result = name })
+				} else if name := f.finder.GetTimezoneName(offsetLng, offsetLat); name != "" {
+					once.Do(func() { result = name })
+				}
+			}(dx, dy)
 		}
 	}
+	wg.Wait()
 
-	go func() {
-		wg.Wait()
-		close(results)
-	}()
-
-	// Return the first result received
-	if result, ok := <-results; ok {
-		return result
-	}
-	return ""
+	return result
 }
 
 func (f *DefaultFinder) GetTimezoneNames(lng float64, lat float64) ([]string, error) {

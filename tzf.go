@@ -7,7 +7,6 @@ package tzf
 import (
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/Alfex4936/tzf/convert"
 	"github.com/Alfex4936/tzf/pb"
@@ -221,32 +220,11 @@ func (f *Finder) getItem(lng float64, lat float64) ([]*tzitem, error) {
 
 // GetTimezoneName will use alphabet order and return first matched result.
 func (f *Finder) GetTimezoneName(lng float64, lat float64) string {
-	var wg sync.WaitGroup
-	results := make(chan string, 1) // Channel to collect the first successful result
-
 	p := geometry.Point{X: lng, Y: lat}
-
 	for _, item := range f.items {
-		wg.Add(1)
-		go func(item *tzitem) {
-			defer wg.Done()
-			if item.ContainsPoint(p) {
-				select {
-				case results <- item.name:
-				default:
-				}
-			}
-		}(item)
-	}
-
-	go func() {
-		wg.Wait()
-		close(results)
-	}()
-
-	result, ok := <-results // Retrieve the first result available
-	if ok {
-		return result
+		if item.ContainsPoint(p) {
+			return item.name
+		}
 	}
 	return ""
 }
