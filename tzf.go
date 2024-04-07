@@ -5,8 +5,11 @@
 package tzf
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"math"
+	"sync"
 
 	"github.com/Alfex4936/tzf/convert"
 	"github.com/Alfex4936/tzf/pb"
@@ -47,13 +50,57 @@ func (i *tzitem) ContainsPoint(p geometry.Point) bool {
 		return false
 	}
 
-	// Now perform the more expensive polygon contains check
+	if len(i.polys) > 10 {
+		return i.containsPointConcurrent(p)
+	}
+
+	// Sequential check for small number of polygons
 	for _, poly := range i.polys {
 		if poly.ContainsPoint(p) {
 			return true
 		}
 	}
 	return false
+}
+
+func (i *tzitem) containsPointConcurrent(p geometry.Point) bool {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var wg sync.WaitGroup
+	resultChan := make(chan bool, 1)
+
+	for _, poly := range i.polys {
+		wg.Add(1)
+		go func(poly *geometry.Poly) {
+			defer wg.Done()
+			select {
+			case <-ctx.Done():
+				// Another goroutine found the point, no need to continue
+				return
+			default:
+				if poly.ContainsPoint(p) {
+					select {
+					case resultChan <- true:
+						cancel() // Signal to other goroutines to stop processing
+					default:
+					}
+				}
+			}
+		}(poly)
+	}
+
+	go func() {
+		wg.Wait()
+		close(resultChan) // Close the channel once all checks are done
+	}()
+
+	select {
+	case result := <-resultChan:
+		return result
+	default:
+		return false
+	}
 }
 
 func (i *tzitem) getMinMax() ([2]float64, [2]float64) {
@@ -190,12 +237,21 @@ func getRTreeRangeShifted(lng float64, lat float64) float64 {
 func (f *Finder) getItemInRanges(lng float64, lat float64) []*tzitem {
 	candidates := []*tzitem{}
 
-	// TODO(ringsaturn): fix this range
+	// Adjust the range based on more nuanced logic or additional conditions
 	shifted := getRTreeRangeShifted(lng, lat)
-	f.tr.Search([2]float64{lng - shifted, lat - shifted}, [2]float64{lng + shifted, lat + shifted}, func(min, max [2]float64, data *tzitem) bool {
+
+	// Calculate bounds and ensure they're within valid geographic ranges
+	minLng := math.Max(lng-shifted, -180)
+	maxLng := math.Min(lng+shifted, 180)
+	minLat := math.Max(lat-shifted, -90)
+	maxLat := math.Min(lat+shifted, 90)
+
+	f.tr.Search([2]float64{minLng, minLat}, [2]float64{maxLng, maxLat}, func(min, max [2]float64, data *tzitem) bool {
 		candidates = append(candidates, data)
-		return true
+		return true // Continue searching
 	})
+
+	// Fallback to all items if no candidates found within the adjusted range
 	if len(candidates) == 0 {
 		candidates = f.items
 	}
@@ -235,6 +291,19 @@ func (f *Finder) GetTimezoneName(lng float64, lat float64) string {
 	return ""
 }
 
+func (f *Finder) GetTimezoneName2(lng, lat float64) string {
+	point := geometry.Point{X: lng, Y: lat}
+	candidates := f.getCandidatesByBoundingBox(lng, lat)
+	for _, item := range candidates {
+		for _, poly := range item.polys {
+			if poly.ContainsPoint(point) {
+				return item.name
+			}
+		}
+	}
+	return ""
+}
+
 func (f *Finder) GetTimezoneNames(lng float64, lat float64) ([]string, error) {
 	item, err := f.getItem(lng, lat)
 	if err != nil {
@@ -254,4 +323,21 @@ func (f *Finder) TimezoneNames() []string {
 
 func (f *Finder) DataVersion() string {
 	return f.version
+}
+
+func (i *tzitem) getBoundingBox() (min, max [2]float64) {
+	return i.min, i.max
+}
+
+// Fast initial candidate selection based on bounding box overlap.
+func (f *Finder) getCandidatesByBoundingBox(lng, lat float64) []*tzitem {
+	candidates := make([]*tzitem, 0)
+	point := [2]float64{lng, lat}
+	for _, item := range f.items {
+		min, max := item.getBoundingBox()
+		if point[0] >= min[0] && point[0] <= max[0] && point[1] >= min[1] && point[1] <= max[1] {
+			candidates = append(candidates, item)
+		}
+	}
+	return candidates
 }

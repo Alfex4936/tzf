@@ -19,11 +19,11 @@ toolkit.
 | ----------------- | ----------------------------------------------------------------------- | ----------------- |
 | Go                | [`Alfex4936/tzf`](https://github.com/Alfex4936/tzf)                     |                   |
 | Ruby              | [`HarlemSquirrel/tzf-rb`](https://github.com/HarlemSquirrel/tzf-rb)     |                   |
-| Rust              | [`Alfex4936/tzf-rs`](https://github.com/Alfex4936/tzf-rs)               |                   |
-| Python            | [`Alfex4936/tzfpy`](https://github.com/Alfex4936/tzfpy)                 |                   |
-| HTTP API          | [`Alfex4936/tzf-server`](https://github.com/Alfex4936/tzf-server)       | build with tzf    |
+| Rust              | [`ringsaturn/tzf-rs`](https://github.com/ringsaturn/tzf-rs)             |                   |
+| Python            | [`ringsaturn/tzfpy`](https://github.com/ringsaturn/tzfpy)               |                   |
+| HTTP API          | [`ringsaturn/tzf-server`](https://github.com/ringsaturn/tzf-server)     | build with tzf    |
 | HTTP API          | [`racemap/rust-tz-service`](https://github.com/racemap/rust-tz-service) | build with tzf-rs |
-| Redis Server      | [`Alfex4936/tzf-server`](https://github.com/Alfex4936/tzf-server)       | build with tzf    |
+| Redis Server      | [`ringsaturn/tzf-server`](https://github.com/ringsaturn/tzf-server)     | build with tzf    |
 | Redis Server      | [`ringsaturn/redizone`](https://github.com/ringsaturn/redizone)         | build with tzf-rs |
 
 ## Quick Start
@@ -66,7 +66,7 @@ import (
 	"fmt"
 
 	"github.com/Alfex4936/tzf"
-	tzfrel "github.com/Alfex4936/tzf-rel"
+	tzfrel "github.com/ringsaturn/tzf-rel"
 	"github.com/Alfex4936/tzf/pb"
 	"google.golang.org/protobuf/proto"
 )
