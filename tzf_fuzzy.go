@@ -1,16 +1,16 @@
 package tzf
 
 import (
+	"github.com/Alfex4936/tzf/pb"
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/maptile"
-	"github.com/ringsaturn/tzf/pb"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 )
 
 // FuzzyFinder use a tile map to store timezone name. Data are made by
-// [github.com/ringsaturn/tzf/cmd/preindextzpb] which powerd by
-// [github.com/ringsaturn/tzf/preindex.PreIndexTimezones].
+// [github.com/Alfex4936/tzf/cmd/preindextzpb] which powerd by
+// [github.com/Alfex4936/tzf/preindex.PreIndexTimezones].
 type FuzzyFinder struct {
 	idxZoom int
 	aggZoom int

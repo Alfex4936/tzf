@@ -1,6 +1,6 @@
-# TZF: a fast timezone finder for Go. [![Go Reference](https://pkg.go.dev/badge/github.com/ringsaturn/tzf.svg)](https://pkg.go.dev/github.com/ringsaturn/tzf) [![codecov](https://codecov.io/gh/ringsaturn/tzf/branch/main/graph/badge.svg?token=9KIU85IERM)](https://codecov.io/gh/ringsaturn/tzf)
+# TZF: a fast timezone finder for Go. [![Go Reference](https://pkg.go.dev/badge/github.com/Alfex4936/tzf.svg)](https://pkg.go.dev/github.com/Alfex4936/tzf) [![codecov](https://codecov.io/gh/Alfex4936/tzf/branch/main/graph/badge.svg?token=9KIU85IERM)](https://codecov.io/gh/Alfex4936/tzf)
 
-![](https://github.com/ringsaturn/tzf/blob/gh-pages/docs/tzf-social-media.png?raw=true)
+![](https://github.com/Alfex4936/tzf/blob/gh-pages/docs/tzf-social-media.png?raw=true)
 
 TZF is a fast timezone finder package designed for Go. It allows you to quickly
 find the timezone for a given latitude and longitude, making it ideal for geo
@@ -17,13 +17,13 @@ toolkit.
 
 | Language or Sever | Link                                                                    | Note              |
 | ----------------- | ----------------------------------------------------------------------- | ----------------- |
-| Go                | [`ringsaturn/tzf`](https://github.com/ringsaturn/tzf)                   |                   |
+| Go                | [`Alfex4936/tzf`](https://github.com/Alfex4936/tzf)                     |                   |
 | Ruby              | [`HarlemSquirrel/tzf-rb`](https://github.com/HarlemSquirrel/tzf-rb)     |                   |
-| Rust              | [`ringsaturn/tzf-rs`](https://github.com/ringsaturn/tzf-rs)             |                   |
-| Python            | [`ringsaturn/tzfpy`](https://github.com/ringsaturn/tzfpy)               |                   |
-| HTTP API          | [`ringsaturn/tzf-server`](https://github.com/ringsaturn/tzf-server)     | build with tzf    |
+| Rust              | [`Alfex4936/tzf-rs`](https://github.com/Alfex4936/tzf-rs)               |                   |
+| Python            | [`Alfex4936/tzfpy`](https://github.com/Alfex4936/tzfpy)                 |                   |
+| HTTP API          | [`Alfex4936/tzf-server`](https://github.com/Alfex4936/tzf-server)       | build with tzf    |
 | HTTP API          | [`racemap/rust-tz-service`](https://github.com/racemap/rust-tz-service) | build with tzf-rs |
-| Redis Server      | [`ringsaturn/tzf-server`](https://github.com/ringsaturn/tzf-server)     | build with tzf    |
+| Redis Server      | [`Alfex4936/tzf-server`](https://github.com/Alfex4936/tzf-server)       | build with tzf    |
 | Redis Server      | [`ringsaturn/redizone`](https://github.com/ringsaturn/redizone)         | build with tzf-rs |
 
 ## Quick Start
@@ -31,7 +31,7 @@ toolkit.
 To start using TZF in your Go project, you first need to install the package:
 
 ```bash
-go get github.com/ringsaturn/tzf
+go get github.com/Alfex4936/tzf
 ```
 
 Then, you can use the following code to locate:
@@ -43,7 +43,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/ringsaturn/tzf"
+	"github.com/Alfex4936/tzf"
 )
 
 func main() {
@@ -65,9 +65,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/ringsaturn/tzf"
-	tzfrel "github.com/ringsaturn/tzf-rel"
-	"github.com/ringsaturn/tzf/pb"
+	"github.com/Alfex4936/tzf"
+	tzfrel "github.com/Alfex4936/tzf-rel"
+	"github.com/Alfex4936/tzf/pb"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -96,7 +96,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/ringsaturn/tzf"
+	"github.com/Alfex4936/tzf"
 )
 
 var f tzf.F
@@ -123,7 +123,7 @@ of coordinates. To use the CLI tool, you first need to install it using the
 following command:
 
 ```bash
-go install github.com/ringsaturn/tzf/cmd/tzf@latest
+go install github.com/Alfex4936/tzf/cmd/tzf@latest
 ```
 
 Once installed, you can use the tzf command followed by the latitude and
@@ -139,7 +139,7 @@ You can download the original data from
 <https://github.com/evansiroky/timezone-boundary-builder>.
 
 The preprocessed protobuf data can be obtained from
-<https://github.com/ringsaturn/tzf-rel>, which has Go's `embedded` support.
+<https://github.com/Alfex4936/tzf-rel>, which has Go's `embedded` support.
 These files are Protocol Buffers messages for more efficient binary
 distribution, similar to Python wheels. You can view the
 [`pb/tzinfo.proto file`](./pb/tzinfo.proto) or its
@@ -187,10 +187,10 @@ It is used within the `DefaultFinder`, which is built on `FuzzyFinder`, to
 reduce execution times of the raycasting algorithm.
 
 [pb_html]: https://ringsaturn.github.io/tzf/pb.html
-[full-link]: https://github.com/ringsaturn/tzf-rel/blob/main/combined-with-oceans.pb
-[lite-link]: https://github.com/ringsaturn/tzf-rel/blob/main/combined-with-oceans.reduce.pb
-[preindex-link]: https://github.com/ringsaturn/tzf-rel/blob/main/combined-with-oceans.reduce.preindex.pb
-[compressd-link]: https://github.com/ringsaturn/tzf-rel/blob/main/combined-with-oceans.reduce.compress.pb
+[full-link]: https://github.com/Alfex4936/tzf-rel/blob/main/combined-with-oceans.pb
+[lite-link]: https://github.com/Alfex4936/tzf-rel/blob/main/combined-with-oceans.reduce.pb
+[preindex-link]: https://github.com/Alfex4936/tzf-rel/blob/main/combined-with-oceans.reduce.preindex.pb
+[compressd-link]: https://github.com/Alfex4936/tzf-rel/blob/main/combined-with-oceans.reduce.compress.pb
 [points_not_equal]: https://geojson.io/#id=gist:ringsaturn/2d958e7f0a279a7411c04907f255955a
 
 I have written an article about the history of tzf, its Rust port, and its Rust
@@ -216,12 +216,12 @@ Here is what has been done to improve performance:
 That's all. There are no black magic tricks inside the tzf package.
 
 The benchmark was conducted using version
-<https://github.com/ringsaturn/tzf/releases/tag/v0.10.0>
+<https://github.com/Alfex4936/tzf/releases/tag/v0.10.0>
 
 ```
 goos: darwin
 goarch: amd64
-pkg: github.com/ringsaturn/tzf
+pkg: github.com/Alfex4936/tzf
 cpu: Intel(R) Core(TM) i9-9880H CPU @ 2.30GHz
 BenchmarkDefaultFinder_GetTimezoneName_Random_WorldCities-16              441309              2778 ns/op              1000 ns/p50            10000 ns/p90            19000 ns/p99
 BenchmarkFuzzyFinder_GetTimezoneName_Random_WorldCities-16               1000000              1077 ns/op              1000 ns/p50             2000 ns/p90             2000 ns/p99
@@ -232,7 +232,7 @@ BenchmarkFullFinder_GetTimezoneName-16                                    212896
 BenchmarkFullFinder_GetTimezoneNameAtEdge-16                              195381              6262 ns/op              6000 ns/p50             7000 ns/p90            23000 ns/p99
 BenchmarkFullFinder_GetTimezoneName_Random_WorldCities-16                 116652              9354 ns/op              8000 ns/p50            15000 ns/p90            31000 ns/p99
 PASS
-ok      github.com/ringsaturn/tzf       18.321s
+ok      github.com/Alfex4936/tzf       18.321s
 ```
 
 - <https://ringsaturn.github.io/tzf/> displays continuous benchmarking results.
@@ -241,12 +241,12 @@ ok      github.com/ringsaturn/tzf       18.321s
 
 ## Related Repos
 
-- <https://github.com/ringsaturn/tzf-rel> Preprocessed probuf data release repo
+- <https://github.com/Alfex4936/tzf-rel> Preprocessed probuf data release repo
 - <https://github.com/ringsaturn/tz-benchmark> Continuous Benchmark Compared
   with other packages
-- <https://github.com/ringsaturn/tzf-rs> Rust port of tzf
-- <https://github.com/ringsaturn/tzfpy> Rust port's Python binding
-- <https://github.com/ringsaturn/tzf-server> HTTP&Redis server build with tzf
+- <https://github.com/Alfex4936/tzf-rs> Rust port of tzf
+- <https://github.com/Alfex4936/tzfpy> Rust port's Python binding
+- <https://github.com/Alfex4936/tzf-server> HTTP&Redis server build with tzf
 - <https://github.com/ringsaturn/redizone> Redis compatible server build with
   tzf-rs
 

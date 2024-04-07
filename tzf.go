@@ -8,9 +8,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ringsaturn/tzf/convert"
-	"github.com/ringsaturn/tzf/pb"
-	"github.com/ringsaturn/tzf/reduce"
+	"github.com/Alfex4936/tzf/convert"
+	"github.com/Alfex4936/tzf/pb"
+	"github.com/Alfex4936/tzf/reduce"
 	"github.com/tidwall/geojson/geometry"
 	"github.com/tidwall/rtree"
 	"golang.org/x/exp/slices"
@@ -24,7 +24,7 @@ type Option struct {
 
 type OptionFunc = func(opt *Option)
 
-// SetDropPBTZ will make Finder not save [github.com/ringsaturn/tzf/pb.Timezone] in memory
+// SetDropPBTZ will make Finder not save [github.com/Alfex4936/tzf/pb.Timezone] in memory
 func SetDropPBTZ(opt *Option) {
 	opt.DropPBTZ = true
 }

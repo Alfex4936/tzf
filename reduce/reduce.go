@@ -2,9 +2,9 @@
 package reduce
 
 import (
+	"github.com/Alfex4936/tzf/pb"
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/simplify"
-	"github.com/ringsaturn/tzf/pb"
 )
 
 func ReducePoints(points []*pb.Point) []*pb.Point {

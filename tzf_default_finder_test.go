@@ -7,9 +7,9 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/Alfex4936/tzf"
 	"github.com/loov/hrtime/hrtesting"
 	gocitiesjson "github.com/ringsaturn/go-cities.json"
-	"github.com/ringsaturn/tzf"
 	"github.com/tidwall/lotsa"
 )
 

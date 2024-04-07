@@ -8,8 +8,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Alfex4936/tzf/pb"
 	tzfrellite "github.com/ringsaturn/tzf-rel-lite"
-	"github.com/ringsaturn/tzf/pb"
 	"google.golang.org/protobuf/proto"
 )
 

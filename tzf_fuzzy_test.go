@@ -5,11 +5,11 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/Alfex4936/tzf"
+	"github.com/Alfex4936/tzf/pb"
 	"github.com/loov/hrtime/hrtesting"
 	gocitiesjson "github.com/ringsaturn/go-cities.json"
-	"github.com/ringsaturn/tzf"
 	tzfrellite "github.com/ringsaturn/tzf-rel-lite"
-	"github.com/ringsaturn/tzf/pb"
 	"google.golang.org/protobuf/proto"
 )
 

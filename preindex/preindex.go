@@ -22,7 +22,7 @@
 // couldn't cover polygon shape details, see [tzf#76] for more backgrounds.
 // Latest excluded areas can be views here [exclude.geojson]
 //
-// [tzf#76]: https://github.com/ringsaturn/tzf/issues/76
+// [tzf#76]: https://github.com/Alfex4936/tzf/issues/76
 // [exclude.geojson]: http://geojson.io/#data=data:text/x-url,https%3A%2F%2Fraw.githubusercontent.com%2Fringsaturn%2Ftzf%2Fmain%2Fpreindex%2Fexclude.geojson
 package preindex
 
@@ -32,11 +32,11 @@ import (
 	"math/rand"
 	"runtime"
 
+	"github.com/Alfex4936/tzf/convert"
+	"github.com/Alfex4936/tzf/pb"
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/maptile"
 	"github.com/paulmach/orb/maptile/tilecover"
-	"github.com/ringsaturn/tzf/convert"
-	"github.com/ringsaturn/tzf/pb"
 	"github.com/tidwall/geojson/geometry"
 	"github.com/tidwall/lotsa"
 	"golang.org/x/exp/maps"

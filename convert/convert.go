@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Alfex4936/tzf/pb"
 	"github.com/mitchellh/mapstructure"
-	"github.com/ringsaturn/tzf/pb"
 )
 
 const (
