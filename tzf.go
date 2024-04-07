@@ -42,6 +42,12 @@ func newNotFoundErr(lng float64, lat float64) error {
 }
 
 func (i *tzitem) ContainsPoint(p geometry.Point) bool {
+	// Quick rejection if the point is outside the tzitem's bounding box
+	if p.X < i.min[0] || p.X > i.max[0] || p.Y < i.min[1] || p.Y > i.max[1] {
+		return false
+	}
+
+	// Now perform the more expensive polygon contains check
 	for _, poly := range i.polys {
 		if poly.ContainsPoint(p) {
 			return true
