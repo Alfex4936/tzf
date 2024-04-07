@@ -59,26 +59,46 @@ func NewDefaultFinder() (F, error) {
 }
 
 func (f *DefaultFinder) GetTimezoneName(lng float64, lat float64) string {
-	fuzzyRes := f.fuzzyFinder.GetTimezoneName(lng, lat)
-	if fuzzyRes != "" {
-		return fuzzyRes
-	}
-	name := f.finder.GetTimezoneName(lng, lat)
-	if name != "" {
+	// Immediate checks without offsets
+	if name := f.fuzzyFinder.GetTimezoneName(lng, lat); name != "" {
 		return name
 	}
-	for _, dx := range []float64{-0.02, 0, 0.02} {
-		for _, dy := range []float64{-0.02, 0, 0.02} {
-			dlng := dx + lng
-			dlat := dy + lat
-			fuzzyRes := f.fuzzyFinder.GetTimezoneName(dlng, dlat)
-			if fuzzyRes != "" {
-				return fuzzyRes
+	if name := f.finder.GetTimezoneName(lng, lat); name != "" {
+		return name
+	}
+
+	// Preparing for parallel checks
+	type result struct {
+		name string
+		err  error
+	}
+	results := make(chan result, 9) // Buffer for potential 9 offset checks
+
+	offsets := []float64{-0.02, 0, 0.02}
+	for _, dx := range offsets {
+		for _, dy := range offsets {
+			// Avoid the central point (0, 0) offset, already checked
+			if dx == 0 && dy == 0 {
+				continue
 			}
-			name := f.finder.GetTimezoneName(dlng, dlat)
-			if name != "" {
-				return name
-			}
+			dlng, dlat := dx+lng, dy+lat
+			go func(lng, lat float64) {
+				var res result
+				if name := f.fuzzyFinder.GetTimezoneName(lng, lat); name != "" {
+					res.name = name
+				} else if name := f.finder.GetTimezoneName(lng, lat); name != "" {
+					res.name = name
+				}
+				results <- res
+			}(dlng, dlat)
+		}
+	}
+
+	// Collecting results
+	for i := 0; i < cap(results); i++ {
+		res := <-results
+		if res.name != "" {
+			return res.name
 		}
 	}
 	return ""

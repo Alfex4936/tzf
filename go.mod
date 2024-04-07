@@ -15,7 +15,7 @@ require (
 	github.com/tidwall/lotsa v1.0.3
 	github.com/tidwall/rtree v1.10.0
 	github.com/twpayne/go-polyline v1.1.1
-	golang.org/x/exp v0.0.0-20240314144324-c7f7c6466f7f
+	golang.org/x/exp v0.0.0-20240404231335-c0f41cb1a7a0
 	google.golang.org/protobuf v1.33.0
 )
 
