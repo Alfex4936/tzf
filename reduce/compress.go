@@ -2,6 +2,7 @@ package reduce
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/Alfex4936/tzf/pb"
 	"github.com/twpayne/go-polyline"
@@ -16,39 +17,50 @@ func CompressedPointsToPolylineBytes(points []*pb.Point) []byte {
 }
 
 func DecompressedPolylineBytesToPoints(input []byte) []*pb.Point {
-	expect := []*pb.Point{}
 	coords, _, _ := polyline.DecodeCoords(input)
-	for _, coord := range coords {
-		expect = append(expect, &pb.Point{
+	expect := make([]*pb.Point, len(coords))
+	for i, coord := range coords {
+		expect[i] = &pb.Point{
 			Lng: float32(coord[0]), Lat: float32(coord[1]),
-		})
+		}
 	}
 	return expect
 }
 
 func CompressWithPolyline(input *pb.Timezones) *pb.CompressedTimezones {
 	output := &pb.CompressedTimezones{
-		Method:  pb.CompressMethod_Polyline,
-		Version: input.Version,
+		Method:    pb.CompressMethod_Polyline,
+		Version:   input.Version,
+		Timezones: make([]*pb.CompressedTimezone, len(input.Timezones)), // Allocate exact number of timezones
 	}
-	for _, timezone := range input.Timezones {
-		reducedTimezone := &pb.CompressedTimezone{
-			Name: timezone.Name,
-		}
-		for _, polygon := range timezone.Polygons {
-			newPoly := &pb.CompressedPolygon{
-				Points: CompressedPointsToPolylineBytes(polygon.Points),
-				Holes:  make([]*pb.CompressedPolygon, 0),
+
+	var wg sync.WaitGroup
+
+	for idx, timezone := range input.Timezones {
+		wg.Add(1)
+		go func(idx int, tz *pb.Timezone) {
+			defer wg.Done()
+			reducedTimezone := &pb.CompressedTimezone{
+				Name: tz.Name,
+				Data: make([]*pb.CompressedPolygon, 0, len(tz.Polygons)),
 			}
-			for _, hole := range polygon.Holes {
-				newPoly.Holes = append(newPoly.Holes, &pb.CompressedPolygon{
-					Points: CompressedPointsToPolylineBytes(hole.Points),
-				})
+			for _, polygon := range tz.Polygons {
+				newPoly := &pb.CompressedPolygon{
+					Points: CompressedPointsToPolylineBytes(polygon.Points),
+					Holes:  make([]*pb.CompressedPolygon, 0, len(polygon.Holes)),
+				}
+				for _, hole := range polygon.Holes {
+					newPoly.Holes = append(newPoly.Holes, &pb.CompressedPolygon{
+						Points: CompressedPointsToPolylineBytes(hole.Points),
+					})
+				}
+				reducedTimezone.Data = append(reducedTimezone.Data, newPoly)
 			}
-			reducedTimezone.Data = append(reducedTimezone.Data, newPoly)
-		}
-		output.Timezones = append(output.Timezones, reducedTimezone)
+			output.Timezones[idx] = reducedTimezone
+		}(idx, timezone)
 	}
+	wg.Wait()
+
 	return output
 }
 
@@ -63,26 +75,36 @@ func Compress(input *pb.Timezones, method pb.CompressMethod) (*pb.CompressedTime
 
 func DecompressWithPolyline(input *pb.CompressedTimezones) *pb.Timezones {
 	output := &pb.Timezones{
-		Version: input.Version,
+		Version:   input.Version,
+		Timezones: make([]*pb.Timezone, len(input.Timezones)),
 	}
-	for _, timezone := range input.Timezones {
-		reducedTimezone := &pb.Timezone{
-			Name: timezone.Name,
-		}
-		for _, polygon := range timezone.Data {
-			newPoly := &pb.Polygon{
-				Points: DecompressedPolylineBytesToPoints(polygon.Points),
-				Holes:  make([]*pb.Polygon, 0),
+
+	var wg sync.WaitGroup
+	for idx, timezone := range input.Timezones {
+		wg.Add(1)
+		go func(idx int, tz *pb.CompressedTimezone) {
+			defer wg.Done()
+			reducedTimezone := &pb.Timezone{
+				Name:     tz.Name,
+				Polygons: make([]*pb.Polygon, len(tz.Data)),
 			}
-			for _, hole := range polygon.Holes {
-				newPoly.Holes = append(newPoly.Holes, &pb.Polygon{
-					Points: DecompressedPolylineBytesToPoints(hole.Points),
-				})
+			for i, polygon := range tz.Data {
+				newPoly := &pb.Polygon{
+					Points: DecompressedPolylineBytesToPoints(polygon.Points),
+					Holes:  make([]*pb.Polygon, len(polygon.Holes)),
+				}
+				for j, hole := range polygon.Holes {
+					newPoly.Holes[j] = &pb.Polygon{
+						Points: DecompressedPolylineBytesToPoints(hole.Points),
+					}
+				}
+				reducedTimezone.Polygons[i] = newPoly
 			}
-			reducedTimezone.Polygons = append(reducedTimezone.Polygons, newPoly)
-		}
-		output.Timezones = append(output.Timezones, reducedTimezone)
+			output.Timezones[idx] = reducedTimezone
+		}(idx, timezone)
 	}
+	wg.Wait()
+
 	return output
 }
 

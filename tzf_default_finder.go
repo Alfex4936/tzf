@@ -19,26 +19,33 @@ type DefaultFinder struct {
 }
 
 func NewDefaultFinder() (F, error) {
-	fuzzyFinder, err := func() (F, error) {
-		input := &pb.PreindexTimezones{}
-		if err := proto.Unmarshal(tzfrellite.PreindexData, input); err != nil {
-			panic(err)
-		}
-		return NewFuzzyFinderFromPB(input)
-	}()
+	var (
+		fuzzyFinder F
+		finder      F
+		err         error
+	)
+
 	if err != nil {
 		return nil, err
 	}
 
-	finder, err := func() (F, error) {
-		input := &pb.CompressedTimezones{}
-		if err := proto.Unmarshal(tzfrellite.LiteCompressData, input); err != nil {
-			panic(err)
-		}
-		return NewFinderFromCompressed(input, SetDropPBTZ)
+	// Initiate both finder setups concurrently to improve setup time
+	ch := make(chan error, 2)
+
+	go func() {
+		fuzzyFinder, err = initFuzzyFinder(tzfrellite.PreindexData)
+		ch <- err
 	}()
-	if err != nil {
-		return nil, err
+
+	go func() {
+		finder, err = initCompressedFinder(tzfrellite.LiteCompressData)
+		ch <- err
+	}()
+
+	// Wait for both goroutines to complete
+	err1, err2 := <-ch, <-ch
+	if err1 != nil || err2 != nil {
+		return nil, fmt.Errorf("failed to initialize finders: %v, %v", err1, err2)
 	}
 
 	if finder.DataVersion() != fuzzyFinder.DataVersion() {
@@ -49,14 +56,33 @@ func NewDefaultFinder() (F, error) {
 		)
 	}
 
-	f := &DefaultFinder{}
-	f.fuzzyFinder = fuzzyFinder
-	f.finder = finder
+	f := &DefaultFinder{
+		fuzzyFinder: fuzzyFinder,
+		finder:      finder,
+	}
 
-	// Force free mem by probuf, about 80MB
+	// Force free mem by probuf, about 50~80MB
 	runtime.GC()
 
 	return f, nil
+}
+
+// initFuzzyFinder initializes a fuzzy finder from preindex data
+func initFuzzyFinder(data []byte) (F, error) {
+	input := &pb.PreindexTimezones{}
+	if err := proto.Unmarshal(data, input); err != nil {
+		return nil, err
+	}
+	return NewFuzzyFinderFromPB(input)
+}
+
+// initCompressedFinder initializes a compressed finder from compressed data
+func initCompressedFinder(data []byte) (F, error) {
+	input := &pb.CompressedTimezones{}
+	if err := proto.Unmarshal(data, input); err != nil {
+		return nil, err
+	}
+	return NewFinderFromCompressed(input, SetDropPBTZ)
 }
 
 // Optimized GetTimezoneName considers initial direct lookups before falling back to concurrent offset checks

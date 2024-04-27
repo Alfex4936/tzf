@@ -49,6 +49,7 @@ func (i *tzitem) ContainsPoint(p geometry.Point) bool {
 		return false
 	}
 
+	// Use concurrency only for a significant number of polygons
 	if len(i.polys) > 10 {
 		return i.containsPointConcurrent(p)
 	}
@@ -63,30 +64,42 @@ func (i *tzitem) ContainsPoint(p geometry.Point) bool {
 }
 
 func (i *tzitem) containsPointConcurrent(p geometry.Point) bool {
+	batchSize := len(i.polys) / 4
+	if batchSize < 10 {
+		batchSize = 10
+	}
+
 	var wg sync.WaitGroup
 	found := make(chan bool, 1) // Buffer to prevent blocking
 	done := make(chan struct{}) // Signal to stop other goroutines
 
-	for _, poly := range i.polys {
+	// Creating batches of polygons to process concurrently
+	for start := 0; start < len(i.polys); start += batchSize {
 		wg.Add(1)
-		go func(poly *geometry.Poly) {
+		end := start + batchSize
+		if end > len(i.polys) {
+			end = len(i.polys)
+		}
+
+		go func(polys []*geometry.Poly) {
 			defer wg.Done()
-			select {
-			case <-done:
-				// Received signal to stop
-				return
-			default:
-				if poly.ContainsPoint(p) {
-					select {
-					case found <- true:
-						// Found a containing polygon, signal others to stop
-						close(done)
-					default:
-						// Found channel was already signaled, exit
+			for _, poly := range polys {
+				select {
+				case <-done:
+					return
+				default:
+					if poly.ContainsPoint(p) {
+						select {
+						case found <- true:
+							close(done)
+							return
+						default:
+							return
+						}
 					}
 				}
 			}
-		}(poly)
+		}(i.polys[start:end])
 	}
 
 	go func() {
@@ -256,20 +269,44 @@ func (f *Finder) getItemInRanges(lng float64, lat float64) []*tzitem {
 }
 
 func (f *Finder) getItem(lng float64, lat float64) ([]*tzitem, error) {
-	p := geometry.Point{
-		X: float64(lng),
-		Y: float64(lat),
-	}
-	ret := []*tzitem{}
+	p := geometry.Point{X: lng, Y: lat}
+
+	// Get candidates within ranges to reduce the search space
 	candidates := f.getItemInRanges(lng, lat)
 	if len(candidates) == 0 {
 		return nil, ErrNoTimezoneFound
 	}
-	for _, item := range candidates {
-		if item.ContainsPoint(p) {
-			ret = append(ret, item)
-		}
+
+	var ret []*tzitem
+	var mu sync.Mutex // To protect writes to ret slice
+	var wg sync.WaitGroup
+
+	// Process candidates in batches to leverage concurrency without overwhelming the system
+	batchSize := len(candidates) / 4 // Dynamically calculate batch size based on number of candidates
+	if batchSize < 10 {
+		batchSize = 10 // Minimum batch size to ensure concurrency
 	}
+
+	for i := 0; i < len(candidates); i += batchSize {
+		wg.Add(1)
+		go func(start int) {
+			defer wg.Done()
+			end := start + batchSize
+			if end > len(candidates) {
+				end = len(candidates)
+			}
+			for _, item := range candidates[start:end] {
+				if item.ContainsPoint(p) {
+					mu.Lock()
+					ret = append(ret, item)
+					mu.Unlock()
+				}
+			}
+		}(i)
+	}
+
+	wg.Wait() // Wait for all batches to complete
+
 	if len(ret) == 0 {
 		return nil, newNotFoundErr(lng, lat)
 	}
@@ -287,15 +324,30 @@ func (f *Finder) GetTimezoneName(lng float64, lat float64) string {
 	return ""
 }
 
+// IsKoreaTimezone will check if the point is in the timezone of South Korea. (Asia/Seoul)
+func (f *Finder) IsKoreaTimezone(lng float64, lat float64) bool {
+	p := geometry.Point{X: lng, Y: lat}
+	for _, item := range f.items {
+		if item.ContainsPoint(p) {
+			return item.name == "Asia/Seoul"
+		}
+	}
+	return false
+}
+
 func (f *Finder) GetTimezoneName2(lng, lat float64) string {
 	point := geometry.Point{X: lng, Y: lat}
 	candidates := f.getCandidatesByBoundingBox(lng, lat)
 	for _, item := range candidates {
-		for _, poly := range item.polys {
-			if poly.ContainsPoint(point) {
-				return item.name
-			}
+		if item.ContainsPoint(point) {
+			return item.name
 		}
+
+		// for _, poly := range item.polys {
+		// 	if poly.ContainsPoint(point) {
+		// 		return item.name
+		// 	}
+		// }
 	}
 	return ""
 }

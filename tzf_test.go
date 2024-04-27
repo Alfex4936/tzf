@@ -114,6 +114,7 @@ func Test_Finder_GetTimezoneName_Random_WorldCities_Alll(t *testing.T) {
 }
 
 // korea
+// 20240427 6.102s -> 5.084s goroutines
 func BenchmarkGeoGetTimezoneName(b *testing.B) {
 	// Pre-initialize the timezone finder to exclude initialization from the benchmark
 	finder, err := tzf.NewDefaultFinder()
@@ -168,14 +169,23 @@ func BenchmarkGeoGetTimezoneName(b *testing.B) {
 		{"평양 (N.Korea)", 39.040122308158885, 125.75997459218848, "Asia/Pyongyang"},
 	}
 
-	// Run the benchmark
-	for _, coord := range coordinates {
-		b.Run("GetTimezoneName", func(b *testing.B) {
+	bench := hrtesting.NewBenchmark(b)
+	defer bench.Report()
+	for bench.Next() {
+		for _, coord := range coordinates {
 			for i := 0; i < b.N; i++ {
 				_ = finder.GetTimezoneName(coord.lng, coord.lat)
 			}
-		})
+		}
 	}
+	// Run the benchmark
+	// for _, coord := range coordinates {
+	// 	b.Run("GetTimezoneName", func(b *testing.B) {
+	// 		for i := 0; i < b.N; i++ {
+	// 			_ = finder.GetTimezoneName(coord.lng, coord.lat)
+	// 		}
+	// 	})
+	// }
 }
 
 func TestGetTimezoneName(t *testing.T) {

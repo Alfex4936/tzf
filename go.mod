@@ -2,7 +2,7 @@ module github.com/Alfex4936/tzf
 
 go 1.22
 
-toolchain go1.22.0
+toolchain go1.22.2
 
 require (
 	github.com/loov/hrtime v1.0.3
